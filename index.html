@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8">
+  <title>Тарихи мемлекеттер ойыны</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body,html {margin:0;padding:0;height:100%;width:100%;font-family:sans-serif;background:#111;color:#fff;}
+    #map {height:100%;width:100%;}
+    .questionBox {position:absolute;top:10px;left:50%;transform:translateX(-50%);
+                  background:#222;padding:10px 20px;border-radius:10px;
+                  font-size:18px;z-index:1000;}
+    .scoreBox {position:absolute;top:10px;right:10px;background:#222;
+               padding:8px 14px;border-radius:8px;z-index:1000;}
+    .resultBox {position:absolute;bottom:20px;left:50%;transform:translateX(-50%);
+                background:#222;padding:12px 20px;border-radius:10px;
+                display:none;z-index:1000;}
+  </style>
+</head>
+<body>
+<div id="map"></div>
+<div class="questionBox" id="question">Жүктелуде...</div>
+<div class="scoreBox" id="score">Ұпай: 0</div>
+<div class="resultBox" id="result"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+const regions = [
+  {name:"Қарахан хандығы", years:[942,1212], coords:[[42,73],[44,75],[46,73]], color:"#9be7a2"},
+  {name:"Қарақытай мемлекеті", years:[1124,1218], coords:[[44,80],[46,82],[48,80]], color:"#ffb347"},
+  {name:"Найман", years:[9,12], coords:[[48,85],[50,87],[52,85]], color:"#ff6666"},
+  {name:"Керейт", years:[10,1203], coords:[[46,100],[48,102],[50,100]], color:"#66b3ff"},
+  {name:"Түрік қағанаты", years:[552,603], coords:[[42,60],[44,62],[46,60]], color:"#ffcc66"},
+  {name:"Түргеш", years:[704,756], coords:[[42,68],[44,70],[46,68]], color:"#66ffaa"},
+  {name:"Қарлұқ", years:[756,940], coords:[[40,75],[42,77],[44,75]], color:"#ff99cc"},
+  {name:"Ұйғыр қағанаты", years:[744,840], coords:[[45,95],[47,97],[49,95]], color:"#99ffcc"},
+  {name:"Саманилер", years:[819,999], coords:[[36,65],[38,67],[40,65]], color:"#ff9966"},
+  {name:"Византия", years:[330,1453], coords:[[40,25],[42,27],[44,25]], color:"#6699ff"}
+];
+
+let map = L.map('map',{minZoom:2}).setView([44,70],4);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+let score=0, current, layers=[];
+function updateScore(){document.getElementById("score").innerText="Ұпай: "+score;}
+function showResult(text,color){
+  const res=document.getElementById("result");
+  res.style.display="block";res.style.background=color;res.innerText=text;
+  setTimeout(()=>{res.style.display="none";},1500);
+}
+
+function nextQuestion(){
+  current = regions[Math.floor(Math.random()*regions.length)];
+  document.getElementById("question").innerText =
+    current.years[0]+"-"+current.years[1]+" ж. қай мемлекет?";
+  // барлық қабаттарды сұрға қайта бояу
+  layers.forEach(l=>l.layer.setStyle({fillColor:'#222',fillOpacity:0.6}));
+}
+
+function checkAnswer(regionName){
+  if(regionName===current.name){
+    score++; updateScore();
+    showResult("Дұрыс!", "#2e7d32");
+    nextQuestion();
+  } else {
+    showResult("Қате!", "#c62828");
+  }
+}
+
+// гео-қабаттарды қосу
+regions.forEach(r=>{
+  const poly=L.polygon(r.coords,{color:"#000",weight:1,fillColor:"#222",fillOpacity:0.6})
+    .on('click',()=>checkAnswer(r.name))
+    .addTo(map);
+  layers.push({info:r,layer:poly});
+});
+
+// Нүкте полигон ішінде ме?
+function pointInPoly(point, polyCoords){
+  const x = point.lat, y = point.lng;
+  let inside=false;
+  for(let i=0,j=polyCoords.length-1;i<polyCoords.length;j=i++){
+    const xi=polyCoords[i][0], yi=polyCoords[i][1];
+    const xj=polyCoords[j][0], yj=polyCoords[j][1];
+    const intersect=((yi>y)!=(yj>y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi);
+    if(intersect) inside=!inside;
+  }
+  return inside;
+}
+
+nextQuestion();
+updateScore();
+</script>
+</body>
+</html>
